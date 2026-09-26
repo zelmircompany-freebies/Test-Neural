@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NG Free Check — тестер бесплатных моделей НейроГейт</title>
+<style>
+  :root{
+    --bg: #0D1117;
+    --panel: #161B22;
+    --panel-2: #1C232D;
+    --border: #2A313C;
+    --text: #C9D1D9;
+    --text-dim: #7D8590;
+    --green: #3FB950;
+    --amber: #D29922;
+    --red: #F85149;
+    --mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+    --sans: 'Inter', -apple-system, system-ui, sans-serif;
+  }
+  *{ box-sizing: border-box; }
+  html,body{
+    margin:0; padding:0; background:var(--bg); color:var(--text);
+    font-family: var(--sans); height:100%;
+  }
+  body{ display:flex; flex-direction:column; min-height:100vh; }
+
+  header{
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
+  }
+  header h1{
+    font-size: 15px; font-weight:600; margin:0; letter-spacing:0.2px;
+    font-family: var(--mono);
+  }
+  header .sub{ font-size:12.5px; color:var(--text-dim); }
+
+  main{
+    flex:1; display:grid; grid-template-columns: 320px 1fr;
+    min-height:0;
+  }
+  @media (max-width: 860px){
+    main{ grid-template-columns: 1fr; }
+  }
+
+  /* ---- sidebar ---- */
+  aside{
+    border-right:1px solid var(--border);
+    padding: 16px;
+    overflow-y:auto;
+    background: var(--panel);
+  }
+  .field{ margin-bottom:16px; }
+  .field label{
+    display:block; font-size:11.5px; color:var(--text-dim);
+    margin-bottom:6px; text-transform:none;
+  }
+  input[type=password], input[type=text]{
+    width:100%; background:var(--panel-2); border:1px solid var(--border);
+    color:var(--text); padding:9px 10px; border-radius:6px;
+    font-family: var(--mono); font-size:12.5px;
+  }
+  input:focus{ outline:1px solid var(--green); border-color:var(--green); }
+
+  .model-list{
+    display:flex; flex-direction:column; gap:6px;
+    max-height: 360px; overflow-y:auto;
+    border:1px solid var(--border); border-radius:6px; padding:6px;
+    background: var(--panel-2);
+  }
+  .model-item{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:8px; padding:7px 9px; border-radius:5px; cursor:pointer;
+    font-size:12.5px; border:1px solid transparent;
+  }
+  .model-item:hover{ background:#20272f; }
+  .model-item.active{
+    border-color: var(--green);
+    background: rgba(63,185,80,0.08);
+  }
+  .model-item .name{ font-family: var(--mono); }
+  .model-item .tag{
+    font-size:10px; padding:1px 6px; border-radius:10px;
+    color:#0D1117; background: var(--green); font-weight:600;
+    white-space:nowrap;
+  }
+
+  .type-grid{
+    display:grid; grid-template-columns: repeat(4, 1fr); gap:6px;
+  }
+  .type-btn{
+    background:var(--panel-2); border:1px solid var(--border);
+    color:var(--text-dim); padding:8px 4px; border-radius:6px;
+    font-size:11px; cursor:pointer; text-align:center;
+  }
+  .type-btn.active{ border-color:var(--green); color:var(--green); background: rgba(63,185,80,0.08); }
+
+  textarea{
+    width:100%; min-height:90px; background:var(--panel-2);
+    border:1px solid var(--border); color:var(--text);
+    border-radius:6px; padding:9px 10px; font-family: var(--sans);
+    font-size:13px; resize:vertical;
+  }
+
+  button.primary{
+    width:100%; padding:11px; border-radius:6px; border:none;
+    background: var(--green); color:#0D1117; font-weight:700;
+    font-size:13px; cursor:pointer; letter-spacing:0.2px;
+  }
+  button.primary:disabled{ opacity:0.5; cursor:default; }
+  button.primary:hover:not(:disabled){ filter:brightness(1.08); }
+
+  /* ---- result panel ---- */
+  section.result{
+    padding: 20px 24px; overflow-y:auto; display:flex; flex-direction:column; gap:14px;
+  }
+  .status-row{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    font-family: var(--mono); font-size:12.5px;
+  }
+  .dot{ width:8px; height:8px; border-radius:50%; background:var(--text-dim); flex:none; }
+  .dot.ok{ background: var(--green); }
+  .dot.err{ background: var(--red); }
+  .dot.pending{ background: var(--amber); animation: pulse 1s infinite; }
+  @keyframes pulse{ 50%{ opacity:0.3; } }
+
+  .stat{
+    background: var(--panel); border:1px solid var(--border);
+    border-radius:6px; padding:10px 12px; font-size:12px;
+  }
+  .stat b{ color:var(--text); font-family: var(--mono); }
+
+  .stat-grid{
+    display:grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr));
+    gap:8px;
+  }
+
+  pre{
+    background: #010409; border:1px solid var(--border);
+    border-radius:8px; padding:14px; font-family: var(--mono);
+    font-size:12px; line-height:1.55; overflow-x:auto;
+    white-space:pre-wrap; word-break:break-word; margin:0;
+    max-height: 420px; overflow-y:auto;
+  }
+  pre.ok{ border-color: rgba(63,185,80,0.4); }
+  pre.err{ border-color: rgba(248,81,73,0.4); }
+
+  h2.section-title{
+    font-size: 12px; text-transform:none; color:var(--text-dim);
+    margin: 0 0 4px 0; font-weight:600;
+  }
+
+  .hint{
+    font-size:11.5px; color:var(--text-dim); line-height:1.5;
+  }
+  .empty-state{
+    color:var(--text-dim); font-size:13px; margin-top:40px;
+    font-family: var(--mono);
+  }
+  a{ color: var(--green); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>ng-free-check</h1>
+  <span class="sub">Проверка бесплатных моделей НейроГейт API — запрос уходит прямо с этой страницы, ключ никуда не сохраняется</span>
+</header>
+
+<main>
+  <aside>
+    <div class="field">
+      <label for="apiKey">API-ключ (ng-proj-...)</label>
+      <input type="password" id="apiKey" placeholder="ng-proj-xxxxxxxx..." autocomplete="off">
+    </div>
+
+    <div class="field">
+      <label>Тип запроса</label>
+      <div class="type-grid" id="typeGrid">
+        <div class="type-btn active" data-type="chat">Chat</div>
+        <div class="type-btn" data-type="image">Картинка</div>
+        <div class="type-btn" data-type="video">Видео</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Модель <span class="hint">(отмечены 0 ₽ по прайсу дашборда)</span></label>
+      <div class="model-list" id="modelList"><!-- filled by JS --></div>
+    </div>
+
+    <div class="field">
+      <label for="prompt">Промпт</label>
+      <textarea id="prompt">Привет! Ответь одной короткой фразой, чтобы подтвердить, что модель работает.</textarea>
+    </div>
+
+    <button class="primary" id="sendBtn">Отправить тестовый запрос</button>
+  </aside>
+
+  <section class="result" id="resultPanel">
+    <div class="status-row">
+      <span class="dot" id="statusDot"></span>
+      <span id="statusText">Ожидание запроса</span>
+    </div>
+    <div class="empty-state" id="emptyState">
+      → Выбери модель слева, вставь ключ и нажми «Отправить тестовый запрос».<br>
+      Это реальный вызов api.neuralgate.ru — увидишь, спишутся ли деньги и придёт ли ответ.
+    </div>
+    <div id="resultBody" style="display:none;">
+      <div class="stat-grid" id="statGrid"></div>
+      <div>
+        <h2 class="section-title">Ответ модели</h2>
+        <pre id="answerBox"></pre>
+      </div>
+      <div>
+        <h2 class="section-title">Сырой ответ / заголовки</h2>
+        <pre id="rawBox"></pre>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+// Модели из прайса дашборда, отмеченные как 0.0000/0.0000 (видео/картинки/free-роутеры),
+// плюс пара платных text-моделей для контроля (чтобы сравнить поведение).
+const MODELS = [
+  // видео — по прайсу 0 ₽
+  { id: "google/veo-3.1", label: "Veo 3.1", type: "video", free: true },
+  { id: "google/veo-3.1-fast", label: "Veo 3.1 Fast", type: "video", free: true },
+  { id: "google/veo-3.1-lite", label: "Veo 3.1 Lite", type: "video", free: true },
+  { id: "kling/video-v3.0-standard", label: "Kling Video v3.0 Standard", type: "video", free: true },
+  { id: "bytedance/seedance-2.0-mini", label: "Seedance 2.0 Mini", type: "video", free: true },
+  { id: "alibaba/wan-3.0", label: "Wan 3.0", type: "video", free: true },
+  { id: "openai/sora-2-pro", label: "Sora 2 Pro", type: "video", free: true },
+  // картинки — по прайсу 0 ₽
+  { id: "black-forest-labs/flux-2-pro", label: "FLUX.2 Pro", type: "image", free: true },
+  { id: "recraft/recraft-v4", label: "Recraft V4", type: "image", free: true },
+  { id: "qwen/qwen-image-3", label: "Qwen Image 3", type: "image", free: true },
+  // чат-модели с free-тегом
+  { id: "google/gemma-4-31b:free", label: "Gemma 4 31B (free)", type: "chat", free: true },
+  { id: "nvidia/nemotron-3-ultra:free", label: "Nemotron 3 Ultra (free)", type: "chat", free: true },
+  { id: "openrouter/auto", label: "Auto Router", type: "chat", free: true },
+  // платная модель для контроля
+  { id: "openai/gpt-4o-mini", label: "GPT-4o-mini (платная, для сравнения)", type: "chat", free: false },
+];
+
+let selectedModel = null;
+let currentType = "chat";
+
+const modelListEl = document.getElementById("modelList");
+const typeGrid = document.getElementById("typeGrid");
+const sendBtn = document.getElementById("sendBtn");
+const statusDot = document.getElementById("statusDot");
+const statusText = document.getElementById("statusText");
+const emptyState = document.getElementById("emptyState");
+const resultBody = document.getElementById("resultBody");
+const statGrid = document.getElementById("statGrid");
+const answerBox = document.getElementById("answerBox");
+const rawBox = document.getElementById("rawBox");
+
+function renderModelList(){
+  modelListEl.innerHTML = "";
+  const filtered = MODELS.filter(m => m.type === currentType);
+  filtered.forEach(m => {
+    const div = document.createElement("div");
+    div.className = "model-item" + (selectedModel && selectedModel.id === m.id ? " active" : "");
+    div.innerHTML = `<span class="name">${m.label}</span>` + (m.free ? `<span class="tag">0 ₽</span>` : "");
+    div.onclick = () => {
+      selectedModel = m;
+      renderModelList();
+    };
+    modelListEl.appendChild(div);
+  });
+  if (!selectedModel || selectedModel.type !== currentType){
+    selectedModel = filtered[0] || null;
+    if (filtered.length) {
+      // re-render to mark first as active
+      setTimeout(renderModelList, 0);
+    }
+  }
+}
+
+typeGrid.querySelectorAll(".type-btn").forEach(btn => {
+  btn.onclick = () => {
+    typeGrid.querySelectorAll(".type-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentType = btn.dataset.type;
+    selectedModel = null;
+    renderModelList();
+  };
+});
+
+renderModelList();
+
+function setStatus(state, text){
+  statusDot.className = "dot " + state;
+  statusText.textContent = text;
+}
+
+async function sendRequest(){
+  const key = document.getElementById("apiKey").value.trim();
+  const prompt = document.getElementById("prompt").value.trim();
+
+  if (!key){
+    alert("Вставь свой API-ключ (ng-proj-...)");
+    return;
+  }
+  if (!selectedModel){
+    alert("Выбери модель слева");
+    return;
+  }
+
+  sendBtn.disabled = true;
+  emptyState.style.display = "none";
+  resultBody.style.display = "none";
+  setStatus("pending", `Отправляю запрос к ${selectedModel.label}...`);
+
+  const startTime = performance.now();
+
+  try {
+    let endpoint, body;
+
+    if (currentType === "chat"){
+      endpoint = "https://api.neuralgate.ru/v1/chat/completions";
+      body = {
+        model: selectedModel.id,
+        messages: [{ role: "user", content: prompt || "Привет!" }]
+      };
+    } else if (currentType === "image"){
+      endpoint = "https://api.neuralgate.ru/v1/images/generations";
+      body = {
+        model: selectedModel.id,
+        prompt: prompt || "простая тестовая иллюстрация"
+      };
+    } else {
+      endpoint = "https://api.neuralgate.ru/v1/videos";
+      body = {
+        model: selectedModel.id,
+        prompt: prompt || "короткое тестовое видео"
+      };
+    }
+
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + key,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    });
+
+    const elapsed = Math.round(performance.now() - startTime);
+    const rawText = await res.text();
+    let parsed = null;
+    try { parsed = JSON.parse(rawText); } catch(e) { /* not JSON */ }
+
+    const costHeader = res.headers.get("X-NeuralGate-Cost-Rub");
+    const balanceHeader = res.headers.get("X-NeuralGate-Balance-Rub");
+    const requestId = res.headers.get("X-NeuralGate-Request-Id");
+    const providerHeader = res.headers.get("X-NeuralGate-Provider");
+
+    resultBody.style.display = "block";
+    statGrid.innerHTML = `
+      <div class="stat">HTTP статус<br><b>${res.status} ${res.ok ? "OK" : "ERROR"}</b></div>
+      <div class="stat">Время ответа<br><b>${elapsed} мс</b></div>
+      <div class="stat">Списано (₽)<br><b>${costHeader ?? "заголовок отсутствует"}</b></div>
+      <div class="stat">Баланс после (₽)<br><b>${balanceHeader ?? "заголовок отсутствует"}</b></div>
+      <div class="stat">Провайдер<br><b>${providerHeader ?? "—"}</b></div>
+      <div class="stat">Request ID<br><b>${requestId ?? "—"}</b></div>
+    `;
+
+    if (res.ok){
+      setStatus("ok", `Успех — ${selectedModel.label} ответила за ${elapsed} мс`);
+      let answer = "(не удалось извлечь текстовый ответ — смотри raw ниже)";
+      if (parsed){
+        if (parsed.choices && parsed.choices[0] && parsed.choices[0].message){
+          answer = parsed.choices[0].message.content;
+        } else if (parsed.data){
+          answer = "Ответ содержит данные (изображение/видео) — см. raw JSON ниже.";
+        } else if (parsed.id && currentType === "video"){
+          answer = "Задача на генерацию видео создана асинхронно, id: " + parsed.id + ". Проверяй статус отдельным запросом.";
+        }
+      }
+      answerBox.className = "ok";
+      answerBox.textContent = answer;
+    } else {
+      setStatus("err", `Ошибка ${res.status} при вызове ${selectedModel.label}`);
+      answerBox.className = "err";
+      answerBox.textContent = (parsed && parsed.error && parsed.error.message)
+        ? `${parsed.error.code || res.status}: ${parsed.error.message}`
+        : "Модель вернула ошибку без понятного тела ответа — см. raw.";
+    }
+
+    rawBox.className = res.ok ? "ok" : "err";
+    rawBox.textContent = parsed ? JSON.stringify(parsed, null, 2) : rawText;
+
+  } catch (err){
+    setStatus("err", "Сетевая ошибка или CORS-блок");
+    resultBody.style.display = "block";
+    statGrid.innerHTML = "";
+    answerBox.className = "err";
+    answerBox.textContent = "Запрос не дошёл до сервера или браузер заблокировал его (CORS). Текст ошибки:\n" + err.message;
+    rawBox.textContent = String(err.stack || err);
+  } finally {
+    sendBtn.disabled = false;
+  }
+}
+
+sendBtn.onclick = sendRequest;
+</script>
+
+</body>
+</html>
