@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Проверка ключа — картинки и видео</title>
+<style>
+  :root{
+    --ink:#1c1a17;
+    --paper:#f6f2ea;
+    --line:#d8cfc0;
+    --accent:#3d5a4c;
+    --accent-soft:#c9d9cd;
+    --warn:#8a3324;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --serif: "Newsreader", Georgia, serif;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--serif);
+    line-height:1.5;
+  }
+  .wrap{
+    max-width:760px;
+    margin:0 auto;
+    padding:48px 24px 100px;
+  }
+  header{
+    border-bottom:1px solid var(--line);
+    padding-bottom:24px;
+    margin-bottom:36px;
+  }
+  h1{
+    font-size:1.9rem;
+    font-weight:600;
+    margin:0 0 8px;
+    letter-spacing:-0.01em;
+  }
+  .sub{
+    font-family:var(--mono);
+    font-size:0.8rem;
+    color:#5c564c;
+    margin:0;
+  }
+  label{
+    display:block;
+    font-family:var(--mono);
+    font-size:0.78rem;
+    color:#5c564c;
+    margin-bottom:6px;
+  }
+  input[type="text"], input[type="password"], textarea{
+    width:100%;
+    font-family:var(--mono);
+    font-size:0.92rem;
+    padding:11px 12px;
+    border:1px solid var(--line);
+    border-radius:2px;
+    background:#fff;
+    color:var(--ink);
+  }
+  textarea{resize:vertical; min-height:64px;}
+  input:focus, textarea:focus{
+    outline:none;
+    border-color:var(--accent);
+  }
+  .key-row{margin-bottom:34px;}
+  .key-row .hint{
+    font-family:var(--mono);
+    font-size:0.72rem;
+    color:#8a8378;
+    margin-top:6px;
+  }
+  section.panel{
+    border:1px solid var(--line);
+    padding:24px;
+    margin-bottom:22px;
+    background:#fbf9f4;
+  }
+  section.panel h2{
+    font-size:1.15rem;
+    font-weight:600;
+    margin:0 0 4px;
+  }
+  section.panel .desc{
+    font-size:0.88rem;
+    color:#5c564c;
+    margin:0 0 18px;
+  }
+  .field{margin-bottom:14px;}
+  button{
+    font-family:var(--mono);
+    font-size:0.82rem;
+    padding:11px 20px;
+    border:1px solid var(--ink);
+    background:var(--ink);
+    color:var(--paper);
+    cursor:pointer;
+    border-radius:2px;
+    transition:background 0.15s, color 0.15s;
+  }
+  button:hover:not(:disabled){
+    background:var(--accent);
+    border-color:var(--accent);
+  }
+  button:disabled{
+    opacity:0.45;
+    cursor:not-allowed;
+  }
+  .status{
+    font-family:var(--mono);
+    font-size:0.78rem;
+    margin-top:14px;
+    padding:10px 12px;
+    border-left:2px solid var(--line);
+    color:#5c564c;
+    white-space:pre-wrap;
+    word-break:break-word;
+  }
+  .status.ok{border-color:var(--accent); background:var(--accent-soft); color:#20362b;}
+  .status.err{border-color:var(--warn); background:#f3ded8; color:var(--warn);}
+  .status.busy{border-color:#a89b7d; background:#f1ead8;}
+  .result{margin-top:16px;}
+  .result img, .result video{
+    max-width:100%;
+    border:1px solid var(--line);
+    display:block;
+  }
+  .spinner{
+    display:inline-block;
+    width:11px;height:11px;
+    border:2px solid #a89b7d;
+    border-top-color:transparent;
+    border-radius:50%;
+    animation:spin 0.7s linear infinite;
+    margin-right:8px;
+    vertical-align:-1px;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  footer{
+    font-family:var(--mono);
+    font-size:0.72rem;
+    color:#8a8378;
+    margin-top:40px;
+    padding-top:20px;
+    border-top:1px solid var(--line);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Проверка Gemini API</h1>
+    <p class="sub">генерация картинки (Nano Banana) и видео (Veo 3.1) — ключ хранится только в этой вкладке</p>
+  </header>
+
+  <div class="key-row">
+    <label for="apiKey">API-ключ</label>
+    <input type="password" id="apiKey" placeholder="AIzaSy...">
+    <p class="hint">не отправляется никуда, кроме generativelanguage.googleapis.com; не сохраняется после закрытия вкладки</p>
+  </div>
+
+  <section class="panel">
+    <h2>Картинка · Nano Banana</h2>
+    <p class="desc">gemini-2.5-flash-image — генерирует изображение по текстовому описанию</p>
+    <div class="field">
+      <label for="imgPrompt">Описание</label>
+      <textarea id="imgPrompt">Уютная кофейня утром, свет из окна, акварельный стиль</textarea>
+    </div>
+    <button id="imgBtn">Сгенерировать картинку</button>
+    <div id="imgStatus"></div>
+    <div id="imgResult" class="result"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Видео · Veo 3.1</h2>
+    <p class="desc">veo-3.1-fast-generate-preview — генерация занимает от одной до нескольких минут, страницу можно не закрывать</p>
+    <div class="field">
+      <label for="vidPrompt">Описание</label>
+      <textarea id="vidPrompt">Волны спокойно набегают на песчаный берег на закате</textarea>
+    </div>
+    <button id="vidBtn">Сгенерировать видео</button>
+    <div id="vidStatus"></div>
+    <div id="vidResult" class="result"></div>
+  </section>
+
+  <footer>только для проверки доступа — не хранит данные, не отправляет их на сторонние сервера</footer>
+</div>
+
+<script>
+const API_BASE = "https://generativelanguage.googleapis.com/v1beta";
+
+function getKey(){
+  const k = document.getElementById('apiKey').value.trim();
+  return k;
+}
+
+function setStatus(el, text, cls){
+  el.className = 'status ' + (cls || '');
+  el.textContent = text;
+}
+
+function setBusy(el, text){
+  el.className = 'status busy';
+  el.innerHTML = '<span class="spinner"></span>' + text;
+}
+
+// ---------- IMAGE ----------
+document.getElementById('imgBtn').addEventListener('click', async () => {
+  const key = getKey();
+  const statusEl = document.getElementById('imgStatus');
+  const resultEl = document.getElementById('imgResult');
+  const btn = document.getElementById('imgBtn');
+  resultEl.innerHTML = '';
+
+  if(!key){ setStatus(statusEl, 'Вставь API-ключ выше.', 'err'); return; }
+
+  const prompt = document.getElementById('imgPrompt').value.trim() || 'A cat';
+  btn.disabled = true;
+  setBusy(statusEl, 'Отправляю запрос к gemini-2.5-flash-image…');
+
+  try {
+    const resp = await fetch(`${API_BASE}/models/gemini-2.5-flash-image:generateContent?key=${encodeURIComponent(key)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }]
+      })
+    });
+
+    const data = await resp.json();
+
+    if(!resp.ok){
+      const msg = (data && data.error && data.error.message) ? data.error.message : JSON.stringify(data);
+      setStatus(statusEl, `Ошибка ${resp.status}: ${msg}`, 'err');
+      btn.disabled = false;
+      return;
+    }
+
+    const parts = data?.candidates?.[0]?.content?.parts || [];
+    const imgPart = parts.find(p => p.inlineData);
+
+    if(imgPart){
+      const mime = imgPart.inlineData.mimeType || 'image/png';
+      const b64 = imgPart.inlineData.data;
+      const img = document.createElement('img');
+      img.src = `data:${mime};base64,${b64}`;
+      resultEl.appendChild(img);
+      setStatus(statusEl, 'Готово.', 'ok');
+    } else {
+      const textPart = parts.find(p => p.text);
+      setStatus(statusEl, 'Ответ пришёл, но без картинки. ' + (textPart ? textPart.text : JSON.stringify(data)), 'err');
+    }
+  } catch (e) {
+    setStatus(statusEl, 'Сетевая ошибка: ' + e.message, 'err');
+  }
+  btn.disabled = false;
+});
+
+// ---------- VIDEO ----------
+document.getElementById('vidBtn').addEventListener('click', async () => {
+  const key = getKey();
+  const statusEl = document.getElementById('vidStatus');
+  const resultEl = document.getElementById('vidResult');
+  const btn = document.getElementById('vidBtn');
+  resultEl.innerHTML = '';
+
+  if(!key){ setStatus(statusEl, 'Вставь API-ключ выше.', 'err'); return; }
+
+  const prompt = document.getElementById('vidPrompt').value.trim() || 'A calm ocean at sunset';
+  btn.disabled = true;
+  setBusy(statusEl, 'Запускаю генерацию видео (veo-3.1-fast-generate-preview)…');
+
+  try {
+    // Step 1: start the long-running operation
+    const startResp = await fetch(`${API_BASE}/models/veo-3.1-fast-generate-preview:predictLongRunning?key=${encodeURIComponent(key)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        instances: [{ prompt: prompt }]
+      })
+    });
+
+    const startData = await startResp.json();
+
+    if(!startResp.ok){
+      const msg = (startData && startData.error && startData.error.message) ? startData.error.message : JSON.stringify(startData);
+      setStatus(statusEl, `Ошибка запуска ${startResp.status}: ${msg}`, 'err');
+      btn.disabled = false;
+      return;
+    }
+
+    const opName = startData.name;
+    if(!opName){
+      setStatus(statusEl, 'Не получил идентификатор операции: ' + JSON.stringify(startData), 'err');
+      btn.disabled = false;
+      return;
+    }
+
+    setBusy(statusEl, 'Видео генерируется, проверяю статус…');
+
+    // Step 2: poll
+    let done = false;
+    let tries = 0;
+    let finalData = null;
+
+    while(!done && tries < 60){ // up to ~10 minutes at 10s interval
+      await new Promise(r => setTimeout(r, 10000));
+      tries++;
+
+      const pollResp = await fetch(`${API_BASE}/${opName}?key=${encodeURIComponent(key)}`);
+      const pollData = await pollResp.json();
+
+      if(!pollResp.ok){
+        const msg = (pollData && pollData.error && pollData.error.message) ? pollData.error.message : JSON.stringify(pollData);
+        setStatus(statusEl, `Ошибка при проверке статуса: ${msg}`, 'err');
+        btn.disabled = false;
+        return;
+      }
+
+      setBusy(statusEl, `Видео генерируется, проверяю статус… (попытка ${tries})`);
+
+      if(pollData.done){
+        done = true;
+        finalData = pollData;
+      }
+    }
+
+    if(!done){
+      setStatus(statusEl, 'Превышено время ожидания (10 минут). Попробуй проверить операцию позже вручную.', 'err');
+      btn.disabled = false;
+      return;
+    }
+
+    if(finalData.error){
+      setStatus(statusEl, 'Ошибка генерации: ' + JSON.stringify(finalData.error), 'err');
+      btn.disabled = false;
+      return;
+    }
+
+    // Try to locate the video result across likely response shapes
+    const videos = finalData?.response?.generateVideoResponse?.generatedSamples
+                || finalData?.response?.videos
+                || [];
+
+    let videoUri = null;
+    if(videos.length && videos[0].video && videos[0].video.uri){
+      videoUri = videos[0].video.uri;
+    } else if (videos.length && videos[0].uri) {
+      videoUri = videos[0].uri;
+    }
+
+    if(videoUri){
+      const withKey = videoUri.includes('?') ? `${videoUri}&key=${encodeURIComponent(key)}` : `${videoUri}?key=${encodeURIComponent(key)}`;
+      const vid = document.createElement('video');
+      vid.src = withKey;
+      vid.controls = true;
+      resultEl.appendChild(vid);
+      setStatus(statusEl, 'Готово.', 'ok');
+    } else {
+      setStatus(statusEl, 'Операция завершена, но видео не нашлось в ожидаемом месте. Сырой ответ:\n' + JSON.stringify(finalData, null, 2), 'err');
+    }
+
+  } catch (e) {
+    setStatus(statusEl, 'Сетевая ошибка: ' + e.message, 'err');
+  }
+  btn.disabled = false;
+});
+</script>
+</body>
+</html>
